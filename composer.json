@@ -1,0 +1,29 @@
+{
+    "name": "wamesk/laravel-telescope",
+    "description": "Laravel Telescope Tags Middleware",
+    "keywords": [
+        "laravel",
+        "telescope"
+    ],
+    "license": "MIT",
+    "require": {
+        "laravel/telescope": "^4.14"
+    },
+    "autoload": {
+        "psr-4": {
+            "Wame\\LaravelTelescope\\": "src/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Wame\\LaravelTelescope\\ServiceProvider"
+            ]
+        }
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}
