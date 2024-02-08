@@ -18,7 +18,7 @@ Add tags to request
 - `time:11:22`
 
 **TELESCOPE_TAG_CODE**
-- `response_code:1.2.3`
+- `code:1.2.3`
 
 ## Instalation
 

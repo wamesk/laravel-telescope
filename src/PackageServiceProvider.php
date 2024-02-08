@@ -2,27 +2,28 @@
 
 namespace Wame\LaravelTelescope;
 
+use Illuminate\Contracts\Http\Kernel;
 use Illuminate\Support\ServiceProvider;
 use Wame\LaravelTelescope\Http\Middleware;
 
 class PackageServiceProvider extends ServiceProvider
 {
-    public function register()
+    public function boot(Kernel $kernel)
     {
         if (env('TELESCOPE_TAG_URL', true) === true) {
-            $this->app->make(Middleware\AddUrlTagToTelescopeRequestMiddleware::class);
+            $kernel->pushMiddleware(Middleware\AddUrlTagToTelescopeRequestMiddleware::class);
         }
 
         if (env('TELESCOPE_TAG_USER', true) === true) {
-            $this->app->make(Middleware\AddUserTagToTelescopeRequestMiddleware::class);
+            $kernel->pushMiddleware(Middleware\AddUserTagToTelescopeRequestMiddleware::class);
         }
 
         if (env('TELESCOPE_TAG_DATE', true) === true) {
-            $this->app->make(Middleware\AddDateTagToTelescopeRequestMiddleware::class);
+            $kernel->pushMiddleware(Middleware\AddDateTagToTelescopeRequestMiddleware::class);
         }
 
         if (env('TELESCOPE_TAG_CODE', true) === true) {
-            $this->app->make(Middleware\AddCodeTagToTelescopeRequestMiddleware::class);
+            $kernel->pushMiddleware(Middleware\AddCodeTagToTelescopeRequestMiddleware::class);
         }
     }
 }

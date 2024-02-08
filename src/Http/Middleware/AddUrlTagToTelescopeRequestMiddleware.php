@@ -14,12 +14,16 @@ class AddUrlTagToTelescopeRequestMiddleware
 
         $status = $response->status();
         $method = $request->getMethod();
-        $url = $request->getBaseUrl();
+        $url = $request->getRequestUri();
 
-        Telescope::tag("api:{$method} {$url}");
-        Telescope::tag("method:{$method}");
-        Telescope::tag("status:{$status}");
-        Telescope::tag("url:{$url}");
+        $tags = [
+            "api:{$method} {$url}",
+            "method:{$method}",
+            "status:{$status}",
+            "url:{$url}",
+        ];
+
+        Telescope::tag(fn () => $tags);
 
         return $response;
     }

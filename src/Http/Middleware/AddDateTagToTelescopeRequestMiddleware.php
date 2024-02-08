@@ -10,9 +10,13 @@ class AddDateTagToTelescopeRequestMiddleware
 {
     public function handle(Request $request, Closure $next)
     {
-        Telescope::tag("date:" . date('Y-m-d'));
-        Telescope::tag("date_time:" . date('Y-m-d H:i:s'));
-        Telescope::tag("time:" . date('H:i'));
+        $tags = [
+            "date:" . date('Y-m-d'),
+            "date_time:" . date('Y-m-d H:i:s'),
+            "time:" . date('H:i'),
+        ];
+
+        Telescope::tag(fn () => $tags);
 
         return $next($request);
     }

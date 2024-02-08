@@ -13,8 +13,12 @@ class AddUserTagToTelescopeRequestMiddleware
         $userId = auth()->check() ? auth()->id() : 'guest';
         $userEmail = auth()->check() ? auth()->user()->email : 'guest@example.com';
 
-        Telescope::tag("user_id:{$userId}");
-        Telescope::tag("user_email:{$userEmail}");
+        $tags = [
+            "user_id:{$userId}",
+            "user_email:{$userEmail}",
+        ];
+
+        Telescope::tag(fn () => $tags);
 
         return $next($request);
     }

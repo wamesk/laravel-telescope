@@ -13,7 +13,7 @@ class AddCodeTagToTelescopeRequestMiddleware
         $code = $response->original['code'] ?? null;
 
         if (!is_null($code)) {
-            Telescope::tag("response_code:{$code}");
+            Telescope::tag(fn () => ["code:{$code}"]);
         }
 
         return $next($request);
