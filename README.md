@@ -10,7 +10,8 @@
 - `api:GET /api/v1/users`
 - `method:GET`
 - `status:200`
-- `url:/api/v1/users`
+- `full_url:/api/v1/users`
+- `path:/api/v1/users`
 
 **TELESCOPE_TAG_USER**
 - `user_id:guest`
