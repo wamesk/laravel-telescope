@@ -1,6 +1,10 @@
-# Laravel Telescope Tag Middleware
+# Laravel Telescope Improve
 
-Add tags to request
+## Add path fultext search
+
+**TELESCOPE_SEARCH**
+
+## Add tags to request
 
 **TELESCOPE_TAG_URL**
 - `api:GET /api/v1/users`
@@ -18,7 +22,7 @@ Add tags to request
 - `time:11:22`
 
 **TELESCOPE_TAG_CODE**
-- `code:1.2.3`
+- `response_code:1.2.3`
 
 ## Instalation
 

@@ -4,6 +4,10 @@ namespace Wame\LaravelTelescope;
 
 use Illuminate\Contracts\Http\Kernel;
 use Illuminate\Support\ServiceProvider;
+use Laravel\Telescope\Storage\DatabaseEntriesRepository;
+use Laravel\Telescope\Storage\EntryModel;
+use Laravel\Telescope\Storage\EntryQueryOptions;
+use Laravel\Telescope\Telescope;
 use Wame\LaravelTelescope\Http\Middleware;
 
 class PackageServiceProvider extends ServiceProvider
@@ -24,6 +28,10 @@ class PackageServiceProvider extends ServiceProvider
 
         if (env('TELESCOPE_TAG_CODE', true) === true) {
             $kernel->pushMiddleware(Middleware\AddCodeTagToTelescopeRequestMiddleware::class);
+        }
+
+        if (env('TELESCOPE_SEARCH', true) === true) {
+            $this->loadRoutesFrom(__DIR__ . '/../routes/api.php');
         }
     }
 }
