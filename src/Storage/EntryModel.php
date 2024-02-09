@@ -133,7 +133,7 @@ class EntryModel extends \Laravel\Telescope\Storage\EntryModel
 
             // Content
             elseif (in_array($key, ['body', 'content'])) {
-                $return['content'] = $text;
+                $return['content'] = $value;
             }
 
             // Date
@@ -165,17 +165,17 @@ class EntryModel extends \Laravel\Telescope\Storage\EntryModel
 
             // Path
             elseif (in_array($key, ['path', 'uri']) && $config['path'] === false) {
-                $return['path'] = $tag;
+                $return['path'] = $value;
             }
 
             // Status
             elseif ($key == 'status' && $config[$key] === false) {
-                $return['status'] = $tag;
+                $return['status'] = $value;
             }
 
             // Url
             elseif ($key == 'url' && $config['url'] === false) {
-                $return['path'] = $tag;
+                $return['path'] = $value;
             }
 
             // Tags
