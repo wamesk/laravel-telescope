@@ -4,33 +4,20 @@ namespace Wame\LaravelTelescope;
 
 use Illuminate\Contracts\Http\Kernel;
 use Illuminate\Support\ServiceProvider;
-use Laravel\Telescope\Storage\DatabaseEntriesRepository;
-use Laravel\Telescope\Storage\EntryModel;
-use Laravel\Telescope\Storage\EntryQueryOptions;
-use Laravel\Telescope\Telescope;
-use Wame\LaravelTelescope\Http\Middleware;
+use Wame\LaravelTelescope\Http\Middleware\AddTagsToTelescopeRequestMiddleware;
 
 class PackageServiceProvider extends ServiceProvider
 {
+    public function register()
+    {
+        $this->mergeConfigFrom(__DIR__ . '/../config/wame-telescope.php', 'wame-telescope');
+    }
+
     public function boot(Kernel $kernel)
     {
-        if (env('TELESCOPE_TAG_URL', true) === true) {
-            $kernel->pushMiddleware(Middleware\AddUrlTagToTelescopeRequestMiddleware::class);
-        }
+        $kernel->pushMiddleware(AddTagsToTelescopeRequestMiddleware::class);
 
-        if (env('TELESCOPE_TAG_USER', true) === true) {
-            $kernel->pushMiddleware(Middleware\AddUserTagToTelescopeRequestMiddleware::class);
-        }
-
-        if (env('TELESCOPE_TAG_DATE', true) === true) {
-            $kernel->pushMiddleware(Middleware\AddDateTagToTelescopeRequestMiddleware::class);
-        }
-
-        if (env('TELESCOPE_TAG_CODE', true) === true) {
-            $kernel->pushMiddleware(Middleware\AddCodeTagToTelescopeRequestMiddleware::class);
-        }
-
-        if (env('TELESCOPE_SEARCH', true) === true) {
+        if (config('wame-telescope.search')) {
             $this->loadRoutesFrom(__DIR__ . '/../routes/api.php');
         }
     }

@@ -4,6 +4,7 @@ namespace Wame\LaravelTelescope\Storage;
 
 use Carbon\Carbon;
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Facades\Request;
 use Laravel\Telescope\Storage\EntryQueryOptions;
 
 class EntryModel extends \Laravel\Telescope\Storage\EntryModel
@@ -20,23 +21,50 @@ class EntryModel extends \Laravel\Telescope\Storage\EntryModel
 
             // Path
             if (isset($values['path'])) {
-                foreach ($values['path'] as $index => $tag) {
-                    if ($index === 0) {
-                        $query->where('content->uri', 'like', '%' . $tag . '%');
-                    } else {
-                        $query->orWhere('content->uri', 'like', '%' . $tag . '%');
-                    }
-                }
+                $query->where('content->uri', 'LIKE', '%' . $values['path'] . '%');
             }
 
-            // Date from
+            // Content
+            if (isset($values['content'])) {
+                $query->where('content', 'LIKE', '%' . $tag . '%');
+            }
+
+            // Date
             if (isset($values['from'])) {
                 $query->where('created_at', '>=', $values['from']);
             }
-
-            // Date to
             if (isset($values['to'])) {
                 $query->where('created_at', '<=', $values['to']);
+            }
+            if (isset($values['date'])) {
+                $query->where('DATE(created_at)', $values['date']);
+            }
+            if (isset($values['datetime'])) {
+                $query->where('created_at', $values['datetime']);
+            }
+            if (isset($values['hour'])) {
+                $query->where('HOUR(created_at)', $values['hour']);
+            }
+            if (isset($values['month'])) {
+                $query->where('MONTH(created_at)', $values['month']);
+            }
+            if (isset($values['time'])) {
+                $query->where('TIME(created_at)', $values['time']);
+            }
+
+            // Code
+            if (isset($values['code'])) {
+                $query->where('content->response->code', $values['code']);
+            }
+
+            // Method
+            if (isset($values['method'])) {
+                $query->where('content->method', $values['method']);
+            }
+
+            // Status
+            if (isset($values['status'])) {
+                $query->where('content->response_status', $values['status']);
             }
 
             // Tags
@@ -68,24 +96,44 @@ class EntryModel extends \Laravel\Telescope\Storage\EntryModel
     }
 
 
-    private function prepareValues($tags)
+    private function prepareValues($text)
     {
-        $tags = collect(explode(',', $tags))->map(fn ($tag) => trim($tag));
+        // Path
+        if (str($text)->startsWith('/')) {
+            return ['path' => $text];
+        }
+
+        if (str($text)->startsWith(['http://', 'https://'])) {
+            return ['path' => Request::create($url)->path()];
+        }
+
+        // Tags
+        $tags = collect(explode(',', $text))->map(fn ($tag) => trim($tag));
 
         if ($tags->isEmpty()) {
             return false;
         }
 
+        $config = config('wame-telescope');
         $return = [];
 
         foreach ($tags as $tag) {
             $explode = explode(':', $tag, 2);
-            $key = $explode[0] ?? null;
+            $key = strtolower($explode[0]) ?? null;
             $value = $explode[1] ?? null;
 
+            if (!$key && !$value) {
+                return false;
+            }
+
             // Path
-            if (!$value || in_array($key, ['http', 'https'])) {
-                $return['path'][] = $tag;
+            elseif (!$value) {
+                $return['path'] = $tag;
+            }
+
+            // Content
+            elseif (in_array($key, ['body', 'content'])) {
+                $return['content'] = $text;
             }
 
             // Date
@@ -93,10 +141,45 @@ class EntryModel extends \Laravel\Telescope\Storage\EntryModel
                 $return['from'] = new CarbonImmutable($value);
             } elseif ($key === 'to') {
                 $return['to'] = new CarbonImmutable($value);
+            } elseif ($key == 'date' && $config[$key] === false) {
+                $return[$key] = $value;
+            } elseif ($key == 'datetime' && $config['date_time'] === false) {
+                $return[$key] = new CarbonImmutable($value);
+            } elseif ($key == 'hour' && $config[$key] === false) {
+                $return[$key] = ltrim($value, '0');
+            } elseif ($key == 'month' && $config[$key] === false) {
+                $return[$key] = ltrim($value, '0');
+            } elseif ($key == 'time' && $config[$key] === false) {
+                $return[$key] = $value;
+            }
+
+            // Code
+            elseif ($key == 'code' && $config[$key] === false) {
+                $return[$key] = $value;
+            }
+
+            // Method
+            elseif ($key == 'method' && $config[$key] === false) {
+                $return[$key] = $value;
+            }
+
+            // Path
+            elseif (in_array($key, ['path', 'uri']) && $config['path'] === false) {
+                $return['path'] = $tag;
+            }
+
+            // Status
+            elseif ($key == 'status' && $config[$key] === false) {
+                $return['status'] = $tag;
+            }
+
+            // Url
+            elseif ($key == 'url' && $config['url'] === false) {
+                $return['path'] = $tag;
             }
 
             // Tags
-            elseif (in_array($key, ['method', 'status', 'url', 'user_id', 'user_email', 'code'])) {
+            elseif (in_array($key, ['code', 'email', 'errors', 'method', 'status', 'url'])) {
                 $return['tags'][] = $tag;
             } else {
                 $return['like'][] = $tag;
