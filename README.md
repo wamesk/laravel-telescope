@@ -16,9 +16,10 @@ Add tags to all requests.
 
 | Key      | .env                    | Default | Search without tag | Example                                                     |
 |----------|-------------------------|---------|:------------------:|-------------------------------------------------------------|
-| /        |                         |         |         ×          | `/api/v1`                                                   |
+| /        |                         |         |         ✓          | `/api/v1`                                                   |
 | Api      | TELESCOPE_TAG_API       | false   |         ×          | `Api:GET /api/v1/users`                                     |
 | Code     | TELESCOPE_TAG_CODE      | true    |         ✓          | `Code:1.2.3`                                                |
+| Content  |                         |         |         ✓          | `Content:ip_address":"127.0.0.1"`                           |
 | Date     | TELESCOPE_TAG_DATE      | false   |         ✓          | `Date:2023-01-01`                                           |
 | DateTime | TELESCOPE_TAG_DATE_TIME | false   |         ✓          | `DateTime:2023-01-01 11:22:33`                              |
 | Email    | TELESCOPE_TAG_EMAIL     | true    |         ×          | `Email:john.doe@example.com` or `Email:none`                |
