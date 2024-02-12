@@ -18,17 +18,17 @@ class AddTagsToTelescopeRequestMiddleware
         $this->config = config('wame-telescope');
 
         $this->tagApi($request);
-        $this->tagCode($request, $response);
-        $this->tagDate($request);
-        $this->tagDateTime($request);
-        $this->tagEmail($request);
-        $this->tagErrors($request, $response);
-        $this->tagHour($request);
+        $this->tagCode($response);
+        $this->tagDate();
+        $this->tagDateTime();
+        $this->tagEmail();
+        $this->tagErrors($response);
+        $this->tagHour();
         $this->tagMethod($request);
-        $this->tagMonth($request);
+        $this->tagMonth();
         $this->tagPath($request);
-        $this->tagStatus($request);
-        $this->tagTime($request);
+        $this->tagStatus($response);
+        $this->tagTime();
         $this->tagUrl($request);
 
         if (count($this->tags) > 0) {
@@ -45,7 +45,7 @@ class AddTagsToTelescopeRequestMiddleware
         }
     }
 
-    private function tagCode($request, $response): void
+    private function tagCode($response): void
     {
         if ($this->config['code']) {
             $code = $response->original['code'] ?? null;
@@ -56,28 +56,28 @@ class AddTagsToTelescopeRequestMiddleware
         }
     }
 
-    private function tagDate($request): void
+    private function tagDate(): void
     {
         if ($this->config['date']) {
             $this->tags[] = 'Date:' . date('Y-m-d');
         }
     }
 
-    private function tagDateTime($request): void
+    private function tagDateTime(): void
     {
         if ($this->config['date_time']) {
             $this->tags[] = 'DateTime:' . date('Y-m-d H:i:s');
         }
     }
 
-    private function tagEmail($request): void
+    private function tagEmail(): void
     {
         if ($this->config['email']) {
             $this->tags[] = 'Email:' . (auth()->check() ? auth()->user()->email : 'none');
         }
     }
 
-    private function tagErrors($request, $response): void
+    private function tagErrors($response): void
     {
         if ($this->config['errors']) {
             $errors = false;
@@ -92,7 +92,7 @@ class AddTagsToTelescopeRequestMiddleware
         }
     }
 
-    private function tagHour($request): void
+    private function tagHour(): void
     {
         if ($this->config['hour']) {
             $this->tags[] = 'Hour:' . date('G');
@@ -106,7 +106,7 @@ class AddTagsToTelescopeRequestMiddleware
         }
     }
 
-    private function tagMonth($request): void
+    private function tagMonth(): void
     {
         if ($this->config['month']) {
             $this->tags[] = 'Month:' . date('n');
@@ -120,14 +120,14 @@ class AddTagsToTelescopeRequestMiddleware
         }
     }
 
-    private function tagStatus($request): void
+    private function tagStatus($response): void
     {
         if ($this->config['status']) {
             $this->tags[] = 'Status:' . $response->status();
         }
     }
 
-    private function tagTime($request): void
+    private function tagTime(): void
     {
         if ($this->config['time']) {
             $this->tags[] = 'Time:' . date('H:i');
