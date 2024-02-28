@@ -48,6 +48,10 @@ class AddTagsToTelescopeRequestMiddleware
     private function tagCode($response): void
     {
         if ($this->config['code']) {
+            if (gettype($response->original) === 'object' && get_class($response->original) === 'Nyholm\Psr7\Stream') {
+                return;
+            }
+
             $code = $response->original['code'] ?? null;
 
             if (!is_null($code)) {
@@ -80,6 +84,10 @@ class AddTagsToTelescopeRequestMiddleware
     private function tagErrors($response): void
     {
         if ($this->config['errors']) {
+            if (gettype($response->original) === 'object' && get_class($response->original) === 'Nyholm\Psr7\Stream') {
+                return;
+            }
+
             $errors = false;
 
             if (isset($response->original['errors']) && $response->original['errors']) {
