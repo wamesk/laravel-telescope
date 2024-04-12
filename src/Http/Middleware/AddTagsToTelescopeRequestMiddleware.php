@@ -4,6 +4,7 @@ namespace Wame\LaravelTelescope\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Laravel\Telescope\Telescope;
 
 class AddTagsToTelescopeRequestMiddleware
@@ -13,7 +14,12 @@ class AddTagsToTelescopeRequestMiddleware
 
     public function handle(Request $request, Closure $next)
     {
+        $requestUri = $request->getRequestUri();
         $response = $next($request);
+
+        if (Str::contains($requestUri, '/nova-api/')) {
+            return $response;
+        }
 
         $this->config = config('wame-telescope');
 
