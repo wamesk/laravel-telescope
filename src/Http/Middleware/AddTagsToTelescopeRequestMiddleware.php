@@ -4,7 +4,6 @@ namespace Wame\LaravelTelescope\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
 use Laravel\Telescope\Telescope;
 
 class AddTagsToTelescopeRequestMiddleware
@@ -17,7 +16,7 @@ class AddTagsToTelescopeRequestMiddleware
         $requestUri = $request->getRequestUri();
         $response = $next($request);
 
-        if (Str::contains($requestUri, '/nova-api/')) {
+        if (str_contains($requestUri, '/nova-api/') || str_starts_with($requestUri, '/nova-vendor/')) {
             return $response;
         }
 
