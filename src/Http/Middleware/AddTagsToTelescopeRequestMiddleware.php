@@ -16,7 +16,7 @@ class AddTagsToTelescopeRequestMiddleware
         $requestUri = $request->getRequestUri();
         $response = $next($request);
 
-        if (str_contains($requestUri, '/nova-api/') || str_starts_with($requestUri, '/nova-vendor/')) {
+        if (!str_contains($requestUri, '/api/v')) {
             return $response;
         }
 
