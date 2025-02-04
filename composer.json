@@ -1,6 +1,7 @@
 {
     "name": "wamesk/laravel-telescope",
     "description": "Laravel Telescope Tags Middleware",
+    "version": "2.1.0",
     "keywords": [
         "laravel",
         "telescope"

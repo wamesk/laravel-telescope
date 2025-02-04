@@ -39,3 +39,14 @@ Add tags to all requests.
 - It is possible to search according to these keys even if saving tags is not allowed.
 - By turning off the tag, you will only lose a quick filter.
 - Keys can be written in case-insensitive
+
+## Data pruning
+The package contains command to pruning data.
+In `.env` it is possible to set the number of hours how much data to remember. (Default 48 hours)
+```
+TELESCOPE_PRUNE_HOURS=168
+```
+To cancel the command, set the value to `false`.
+```
+TELESCOPE_PRUNE_HOURS=false
+```

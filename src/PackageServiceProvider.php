@@ -2,6 +2,7 @@
 
 namespace Wame\LaravelTelescope;
 
+use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Contracts\Http\Kernel;
 use Illuminate\Support\ServiceProvider;
 use Wame\LaravelTelescope\Http\Middleware\AddTagsToTelescopeRequestMiddleware;
@@ -19,6 +20,16 @@ class PackageServiceProvider extends ServiceProvider
 
         if (config('wame-telescope.search')) {
             $this->loadRoutesFrom(__DIR__ . '/../routes/api.php');
+        }
+
+        if ($this->app->runningInConsole()) {
+            $hours = env('TELESCOPE_PRUNE_HOURS', 48);
+            if (false !== $hours) {
+                $this->app->booted(function (): void {
+                    $schedule = $this->app->make(Schedule::class);
+                    $schedule->command('telescope:prune --hours=' . env('TELESCOPE_PRUNE_HOURS', 48))->daily();
+                });
+            }
         }
     }
 }
