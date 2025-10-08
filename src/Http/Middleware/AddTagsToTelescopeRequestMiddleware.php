@@ -3,6 +3,7 @@
 namespace Wame\LaravelTelescope\Http\Middleware;
 
 use Closure;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Laravel\Telescope\Telescope;
 
@@ -81,9 +82,26 @@ class AddTagsToTelescopeRequestMiddleware
 
     private function tagEmail(): void
     {
-        if ($this->config['email']) {
-            $this->tags[] = 'Email:' . (auth()->check() ? auth()->user()->email : 'none');
+        if (!$this->config['email']) {
+            return;
         }
+
+        $email = 'none';
+
+        if (auth()->check()) {
+            $user = auth()->user();
+
+            if ($user instanceof Model) {
+                $attrs = $user->getAttributes();
+                if (array_key_exists('email', $attrs) && $attrs['email'] !== null) {
+                    $email = (string) $attrs['email'];
+                } elseif (method_exists($user, 'getEmailAttribute')) {
+                    $email = (string) ($user->email ?? 'none');
+                }
+            }
+        }
+
+        $this->tags[] = 'Email:' . $email;
     }
 
     private function tagErrors($response): void
