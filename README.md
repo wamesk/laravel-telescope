@@ -50,3 +50,14 @@ To cancel the command, set the value to `false`.
 ```
 TELESCOPE_PRUNE_HOURS=false
 ```
+
+### Config caching
+The retention window is read from `config('wame-telescope.prune_hours')`, not from
+`env()` at runtime. If the application runs `php artisan config:cache`, Laravel stops
+loading the `.env` file altogether, so publish the config into the application to make
+the value part of the cached configuration:
+```shell
+php artisan vendor:publish --tag=wame-telescope-config
+```
+Without the published file the merged package config is still evaluated at runtime and
+`TELESCOPE_PRUNE_HOURS` silently falls back to the 48 hour default on a cached config.

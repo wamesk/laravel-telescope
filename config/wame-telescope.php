@@ -5,6 +5,17 @@ declare(strict_types = 1);
 return [
     'search' => env('TELESCOPE_SEARCH', true),
 
+    /*
+     * How many hours of Telescope data the scheduled "telescope:prune" keeps.
+     * Set to false to stop the package from scheduling the prune at all.
+     *
+     * Publish this file into the application ("config/wame-telescope.php") so the
+     * value survives "php artisan config:cache" - a cached configuration means the
+     * .env file is never loaded, and a package config merged at runtime would fall
+     * back to the default below instead of the configured value.
+     */
+    'prune_hours' => env('TELESCOPE_PRUNE_HOURS', 48),
+
     'api' => env('TELESCOPE_TAG_API', false),
     'code' => env('TELESCOPE_TAG_CODE', true),
     'date' => env('TELESCOPE_TAG_DATE', false),

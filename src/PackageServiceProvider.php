@@ -23,13 +23,33 @@ class PackageServiceProvider extends ServiceProvider
         }
 
         if ($this->app->runningInConsole()) {
-            $hours = env('TELESCOPE_PRUNE_HOURS', 48);
-            if (false !== $hours) {
-                $this->app->booted(function (): void {
-                    $schedule = $this->app->make(Schedule::class);
-                    $schedule->command('telescope:prune --hours=' . env('TELESCOPE_PRUNE_HOURS', 48))->daily();
-                });
-            }
+            $this->publishes([
+                __DIR__ . '/../config/wame-telescope.php' => config_path('wame-telescope.php'),
+            ], 'wame-telescope-config');
+
+            $this->schedulePrune();
         }
+    }
+
+    /**
+     * Schedule the Telescope prune.
+     *
+     * The retention window is read from the configuration and never from env()
+     * directly: once "php artisan config:cache" has run, Laravel skips loading the
+     * .env file entirely, so a runtime env() call silently returns its default
+     * instead of the configured value.
+     */
+    protected function schedulePrune(): void
+    {
+        $hours = config('wame-telescope.prune_hours');
+
+        if (false === $hours || null === $hours) {
+            return;
+        }
+
+        $this->app->booted(function () use ($hours): void {
+            $schedule = $this->app->make(Schedule::class);
+            $schedule->command('telescope:prune --hours=' . $hours)->daily();
+        });
     }
 }
