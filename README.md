@@ -51,11 +51,25 @@ To cancel the command, set the value to `false`.
 TELESCOPE_PRUNE_HOURS=false
 ```
 
+The prune runs once a day at 03:30 (application timezone), away from midnight when
+database backups and maintenance commonly hold locks. Change the time of day with:
+```
+TELESCOPE_PRUNE_AT=04:15
+```
+
+### Schedule safety
+- The prune runs on a single server (`onOneServer()`) and never overlaps a previous run
+  that is still deleting (`withoutOverlapping()`, lock released after 12 hours). Both use
+  the application's default cache store, which every server must share.
+- When the database answers with a lock wait timeout (`1205`) or a deadlock (`1213`),
+  the prune waits 30 seconds and tries again, up to 3 attempts. Entries deleted before
+  the conflict stay deleted. Any other error fails the command at once.
+
 ### Config caching
-The retention window is read from `config('wame-telescope.prune_hours')`, not from
-`env()` at runtime. If the application runs `php artisan config:cache`, Laravel stops
-loading the `.env` file altogether, so publish the config into the application to make
-the value part of the cached configuration:
+The retention window and the time of day are read from `config('wame-telescope.prune_hours')`
+and `config('wame-telescope.prune_at')`, not from `env()` at runtime. If the application runs
+`php artisan config:cache`, Laravel stops loading the `.env` file altogether, so publish the
+config into the application to make the values part of the cached configuration:
 ```shell
 php artisan vendor:publish --tag=wame-telescope-config
 ```

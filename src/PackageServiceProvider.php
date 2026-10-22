@@ -5,10 +5,25 @@ namespace Wame\LaravelTelescope;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Contracts\Http\Kernel;
 use Illuminate\Support\ServiceProvider;
+use Laravel\Telescope\Contracts\PrunableRepository;
 use Wame\LaravelTelescope\Http\Middleware\AddTagsToTelescopeRequestMiddleware;
+use Wame\LaravelTelescope\Storage\DatabaseEntriesRepository;
 
 class PackageServiceProvider extends ServiceProvider
 {
+    /**
+     * Time of day of the scheduled prune when the configuration does not set one.
+     */
+    public const DEFAULT_PRUNE_AT = '03:30';
+
+    /**
+     * Minutes after which the overlap lock of the scheduled prune expires.
+     *
+     * Shorter than a day, so a prune process that was killed without releasing
+     * the lock never blocks the run of the following night.
+     */
+    public const PRUNE_LOCK_MINUTES = 720;
+
     public function register()
     {
         $this->mergeConfigFrom(__DIR__ . '/../config/wame-telescope.php', 'wame-telescope');
@@ -17,6 +32,8 @@ class PackageServiceProvider extends ServiceProvider
     public function boot(Kernel $kernel)
     {
         $kernel->pushMiddleware(AddTagsToTelescopeRequestMiddleware::class);
+
+        $this->registerPrunableRepository();
 
         if (config('wame-telescope.search')) {
             $this->loadRoutesFrom(__DIR__ . '/../routes/api.php');
@@ -32,12 +49,39 @@ class PackageServiceProvider extends ServiceProvider
     }
 
     /**
+     * Resolve "telescope:prune" to the repository that retries lock conflicts.
+     *
+     * Telescope binds its own repository while registering, so overriding the
+     * binding here, in boot(), wins. Only the database driver can be pruned.
+     */
+    protected function registerPrunableRepository(): void
+    {
+        if ('database' !== config('telescope.driver')) {
+            return;
+        }
+
+        $this->app->singleton(PrunableRepository::class, DatabaseEntriesRepository::class);
+
+        $this->app->when(DatabaseEntriesRepository::class)
+            ->needs('$connection')
+            ->give(fn () => config('telescope.storage.database.connection'));
+
+        $this->app->when(DatabaseEntriesRepository::class)
+            ->needs('$chunkSize')
+            ->give(fn () => config('telescope.storage.database.chunk'));
+    }
+
+    /**
      * Schedule the Telescope prune.
      *
-     * The retention window is read from the configuration and never from env()
-     * directly: once "php artisan config:cache" has run, Laravel skips loading the
-     * .env file entirely, so a runtime env() call silently returns its default
-     * instead of the configured value.
+     * The retention window and the time of day are read from the configuration and
+     * never from env() directly: once "php artisan config:cache" has run, Laravel
+     * skips loading the .env file entirely, so a runtime env() call silently returns
+     * its default instead of the configured value.
+     *
+     * The prune runs once a day outside midnight, when database backups and
+     * maintenance commonly hold locks it would wait on. It runs on a single server
+     * and never overlaps a previous run that is still deleting.
      */
     protected function schedulePrune(): void
     {
@@ -47,9 +91,14 @@ class PackageServiceProvider extends ServiceProvider
             return;
         }
 
-        $this->app->booted(function () use ($hours): void {
+        $at = config('wame-telescope.prune_at') ?: self::DEFAULT_PRUNE_AT;
+
+        $this->app->booted(function () use ($hours, $at): void {
             $schedule = $this->app->make(Schedule::class);
-            $schedule->command('telescope:prune --hours=' . $hours)->daily();
+            $schedule->command('telescope:prune --hours=' . $hours)
+                ->dailyAt((string) $at)
+                ->onOneServer()
+                ->withoutOverlapping(self::PRUNE_LOCK_MINUTES);
         });
     }
 }

@@ -16,6 +16,14 @@ return [
      */
     'prune_hours' => env('TELESCOPE_PRUNE_HOURS', 48),
 
+    /*
+     * Time of day ("HH:MM", application timezone) when the scheduled "telescope:prune"
+     * runs. Kept away from midnight on purpose: database backups and maintenance
+     * commonly run then and hold locks the prune would wait on until it fails with
+     * "1205 Lock wait timeout exceeded".
+     */
+    'prune_at' => env('TELESCOPE_PRUNE_AT', '03:30'),
+
     'api' => env('TELESCOPE_TAG_API', false),
     'code' => env('TELESCOPE_TAG_CODE', true),
     'date' => env('TELESCOPE_TAG_DATE', false),
