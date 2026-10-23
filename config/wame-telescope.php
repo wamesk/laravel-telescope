@@ -20,7 +20,8 @@ return [
      * Time of day ("HH:MM", application timezone) when the scheduled "telescope:prune"
      * runs. Kept away from midnight on purpose: database backups and maintenance
      * commonly run then and hold locks the prune would wait on until it fails with
-     * "1205 Lock wait timeout exceeded".
+     * "1205 Lock wait timeout exceeded". An invalid time falls back to 03:30 and
+     * logs a warning.
      */
     'prune_at' => env('TELESCOPE_PRUNE_AT', '03:30'),
 

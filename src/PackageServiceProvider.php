@@ -4,6 +4,7 @@ namespace Wame\LaravelTelescope;
 
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Contracts\Http\Kernel;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\ServiceProvider;
 use Laravel\Telescope\Contracts\PrunableRepository;
 use Wame\LaravelTelescope\Http\Middleware\AddTagsToTelescopeRequestMiddleware;
@@ -81,7 +82,8 @@ class PackageServiceProvider extends ServiceProvider
      *
      * The prune runs once a day outside midnight, when database backups and
      * maintenance commonly hold locks it would wait on. It runs on a single server
-     * and never overlaps a previous run that is still deleting.
+     * and never overlaps a previous run that is still deleting. It runs in the
+     * background, so its lock retries never delay the tasks due in the same minute.
      */
     protected function schedulePrune(): void
     {
@@ -91,14 +93,43 @@ class PackageServiceProvider extends ServiceProvider
             return;
         }
 
-        $at = config('wame-telescope.prune_at') ?: self::DEFAULT_PRUNE_AT;
+        $at = $this->pruneAt();
 
         $this->app->booted(function () use ($hours, $at): void {
             $schedule = $this->app->make(Schedule::class);
             $schedule->command('telescope:prune --hours=' . $hours)
-                ->dailyAt((string) $at)
+                ->dailyAt($at)
                 ->onOneServer()
-                ->withoutOverlapping(self::PRUNE_LOCK_MINUTES);
+                ->withoutOverlapping(self::PRUNE_LOCK_MINUTES)
+                ->runInBackground();
         });
+    }
+
+    /**
+     * The time of day of the scheduled prune, always a valid "H:MM" / "HH:MM" time.
+     *
+     * An invalid value falls back to the default and logs a warning instead of being
+     * handed to the scheduler: an hour such as "25:00" builds a cron expression that
+     * throws while the scheduler evaluates it, which stops every scheduled task of
+     * the application, and a value such as "abc" quietly turns into midnight.
+     */
+    protected function pruneAt(): string
+    {
+        $at = trim((string) config('wame-telescope.prune_at'));
+
+        if ('' === $at) {
+            return self::DEFAULT_PRUNE_AT;
+        }
+
+        if (1 !== preg_match('/^([01]?\d|2[0-3]):[0-5]\d$/', $at)) {
+            Log::warning('Invalid wame-telescope.prune_at, the Telescope prune runs at the default time instead.', [
+                'prune_at' => $at,
+                'default' => self::DEFAULT_PRUNE_AT,
+            ]);
+
+            return self::DEFAULT_PRUNE_AT;
+        }
+
+        return $at;
     }
 }

@@ -56,6 +56,9 @@ database backups and maintenance commonly hold locks. Change the time of day wit
 ```
 TELESCOPE_PRUNE_AT=04:15
 ```
+The value must be a `H:MM` / `HH:MM` time between `0:00` and `23:59`. Anything else
+(`25:00`, `abc`) falls back to 03:30 and logs a warning on every console boot until
+it is fixed, instead of breaking the cron expression of the whole schedule.
 
 ### Schedule safety
 - The prune runs on a single server (`onOneServer()`) and never overlaps a previous run
@@ -64,6 +67,8 @@ TELESCOPE_PRUNE_AT=04:15
 - When the database answers with a lock wait timeout (`1205`) or a deadlock (`1213`),
   the prune waits 30 seconds and tries again, up to 3 attempts. Entries deleted before
   the conflict stay deleted. Any other error fails the command at once.
+- The prune runs in the background (`runInBackground()`), so a run that waits on locks
+  never delays the other tasks due in the same minute.
 
 ### Config caching
 The retention window and the time of day are read from `config('wame-telescope.prune_hours')`
