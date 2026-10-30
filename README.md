@@ -40,6 +40,36 @@ Add tags to all requests.
 - By turning off the tag, you will only lose a quick filter.
 - Keys can be written in case-insensitive
 
+## Storing entries
+The package replaces Telescope's database repository (`EntriesRepository` and `PrunableRepository`
+bindings, database driver only).
+
+### Exceptions
+Telescope shows only the latest occurrence of an exception family (the file and line the exception
+was thrown at) on the index. To hide the earlier ones it runs one
+`UPDATE … WHERE type = 'exception' AND family_hash = ?`, which locks every stored occurrence of the
+family and the gaps around them. Every `QueryException` of an application is thrown at the same line
+of `Illuminate\Database\Connection`, so all database errors form one family that can hold thousands of rows,
+and requests failing on the database at the same time end with `1205 Lock wait timeout exceeded`
+while storing their entries.
+
+The package finds the occurrences to hide with a plain, non-locking read and updates them by primary
+key, so the store locks only the occurrence shown on the index. Two occurrences stored at the same
+moment may both stay shown until the next occurrence of the family hides them.
+
+### Lock wait
+Telescope stores entries after the response was sent, but the PHP worker stays busy until the store
+finishes. On MySQL / MariaDB the store waits at most 5 seconds for a row lock instead of the server
+default (`innodb_lock_wait_timeout`, 50 seconds); the session value is set back afterwards.
+```
+TELESCOPE_STORE_LOCK_WAIT_TIMEOUT=5
+```
+Set it to `0` or `false` to keep the server default.
+
+### Request search
+The full-text request search runs through `SearchEntriesRepository`, so the other Telescope screens
+keep Telescope's own tag filter.
+
 ## Data pruning
 The package contains command to pruning data.
 In `.env` it is possible to set the number of hours how much data to remember. (Default 48 hours)

@@ -25,6 +25,14 @@ return [
      */
     'prune_at' => env('TELESCOPE_PRUNE_AT', '03:30'),
 
+    /*
+     * Seconds Telescope waits for a row lock while storing entries (MySQL / MariaDB).
+     * The store runs after the response was sent, but keeps the PHP worker busy, and
+     * the server default (innodb_lock_wait_timeout, 50 s) would hold it that long when
+     * another transaction locks the rows. Set to 0 or false to keep the server default.
+     */
+    'store_lock_wait_timeout' => env('TELESCOPE_STORE_LOCK_WAIT_TIMEOUT', 5),
+
     'api' => env('TELESCOPE_TAG_API', false),
     'code' => env('TELESCOPE_TAG_CODE', true),
     'date' => env('TELESCOPE_TAG_DATE', false),

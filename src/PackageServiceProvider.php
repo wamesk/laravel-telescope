@@ -6,6 +6,7 @@ use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Contracts\Http\Kernel;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\ServiceProvider;
+use Laravel\Telescope\Contracts\EntriesRepository;
 use Laravel\Telescope\Contracts\PrunableRepository;
 use Wame\LaravelTelescope\Http\Middleware\AddTagsToTelescopeRequestMiddleware;
 use Wame\LaravelTelescope\Storage\DatabaseEntriesRepository;
@@ -34,7 +35,7 @@ class PackageServiceProvider extends ServiceProvider
     {
         $kernel->pushMiddleware(AddTagsToTelescopeRequestMiddleware::class);
 
-        $this->registerPrunableRepository();
+        $this->registerRepository();
 
         if (config('wame-telescope.search')) {
             $this->loadRoutesFrom(__DIR__ . '/../routes/api.php');
@@ -50,17 +51,20 @@ class PackageServiceProvider extends ServiceProvider
     }
 
     /**
-     * Resolve "telescope:prune" to the repository that retries lock conflicts.
+     * Resolve Telescope's storage and "telescope:prune" to the package repository.
      *
-     * Telescope binds its own repository while registering, so overriding the
-     * binding here, in boot(), wins. Only the database driver can be pruned.
+     * The package repository stores exceptions without locking their whole family,
+     * waits only briefly for row locks while storing and retries lock conflicts while
+     * pruning. Telescope binds its own repository while registering, so overriding
+     * the bindings here, in boot(), wins. Only the database driver is replaced.
      */
-    protected function registerPrunableRepository(): void
+    protected function registerRepository(): void
     {
         if ('database' !== config('telescope.driver')) {
             return;
         }
 
+        $this->app->singleton(EntriesRepository::class, DatabaseEntriesRepository::class);
         $this->app->singleton(PrunableRepository::class, DatabaseEntriesRepository::class);
 
         $this->app->when(DatabaseEntriesRepository::class)
