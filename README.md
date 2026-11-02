@@ -39,6 +39,17 @@ Add tags to all requests.
 - It is possible to search according to these keys even if saving tags is not allowed.
 - By turning off the tag, you will only lose a quick filter.
 - Keys can be written in case-insensitive
+- Several keys separated by a comma must all match, e.g. `Email:john.doe@example.com, Code:1.2.3`.
+- A date, time, hour or month that cannot be parsed is ignored instead of failing the search.
+- The search route (`POST {telescope.path}/telescope-api/requests`) uses Telescope's domain, path and
+  middleware and always Telescope's `Authorize` middleware, so it is never reachable anonymously,
+  not even while Telescope is disabled.
+
+### Tags
+- Only requests whose URI contains `/api/v` are tagged.
+- Tagging never changes the response: file downloads, streamed responses and payloads that cannot
+  be read by key are tagged without `Code` / `Errors`, and any failure while tagging is reported
+  instead of failing the request.
 
 ## Storing entries
 The package replaces Telescope's database repository (`EntriesRepository` and `PrunableRepository`
