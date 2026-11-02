@@ -61,6 +61,8 @@ moment may both stay shown until the next occurrence of the family hides them.
 Telescope stores entries after the response was sent, but the PHP worker stays busy until the store
 finishes. On MySQL / MariaDB the store waits at most 5 seconds for a row lock instead of the server
 default (`innodb_lock_wait_timeout`, 50 seconds); the session value is set back afterwards.
+The same limit applies to the entry updates (job status changes) Telescope writes right after the
+store and from its `ProcessPendingUpdates` job.
 ```
 TELESCOPE_STORE_LOCK_WAIT_TIMEOUT=5
 ```
@@ -90,13 +92,36 @@ The value must be a `H:MM` / `HH:MM` time between `0:00` and `23:59`. Anything e
 (`25:00`, `abc`) falls back to 03:30 and logs a warning on every console boot until
 it is fixed, instead of breaking the cron expression of the whole schedule.
 
+### How the prune deletes
+Telescope prunes with `DELETE … WHERE created_at < ? ORDER BY sequence LIMIT 1000`. MySQL / MariaDB
+run it as a range scan of the `created_at` index plus a filesort, so **every** chunk reads and locks
+every stale entry, not only the 1000 it deletes. Measured on MariaDB 10.11 with 2.26 million stale
+entries: one chunk held 4.5 million row locks for 15 seconds, so the whole prune would take hours
+and blocks everyone touching those rows meanwhile.
+
+The package reads the primary keys of each chunk with a plain, non-locking read of the `created_at`
+index alone (in index order, continuing behind the previous chunk) and deletes the chunk by primary
+key: about 1 400 row locks (the entries and their tags) and 0.04 seconds per chunk on the same data.
+The prune is not recorded by Telescope.
+
+### Lock conflicts
+- The prune waits at most 10 seconds for a row lock (MySQL / MariaDB):
+  ```
+  TELESCOPE_PRUNE_LOCK_WAIT_TIMEOUT=10
+  ```
+  Set it to `0` or `false` to keep the server default.
+- A chunk that hits a lock wait timeout (`1205`) or a deadlock (`1213`) is tried again after
+  5 seconds, up to 3 attempts. A chunk still locked is skipped and deleted by the next run;
+  after 3 skipped chunks in a row the run stops.
+- Skipped entries are logged as one warning (deleted / skipped counts and the oldest open
+  transactions of the server from `information_schema.INNODB_TRX` when the database user has
+  the `PROCESS` privilege), never as an exception. Any other database error fails the command
+  at once.
+
 ### Schedule safety
 - The prune runs on a single server (`onOneServer()`) and never overlaps a previous run
   that is still deleting (`withoutOverlapping()`, lock released after 12 hours). Both use
   the application's default cache store, which every server must share.
-- When the database answers with a lock wait timeout (`1205`) or a deadlock (`1213`),
-  the prune waits 30 seconds and tries again, up to 3 attempts. Entries deleted before
-  the conflict stay deleted. Any other error fails the command at once.
 - The prune runs in the background (`runInBackground()`), so a run that waits on locks
   never delays the other tasks due in the same minute.
 

@@ -33,6 +33,14 @@ return [
      */
     'store_lock_wait_timeout' => env('TELESCOPE_STORE_LOCK_WAIT_TIMEOUT', 5),
 
+    /*
+     * Seconds the prune waits for a row lock before it tries the chunk again (MySQL / MariaDB).
+     * A chunk still locked after 3 attempts is skipped and deleted by the next run, so a
+     * lock held elsewhere costs seconds instead of the server default of 50 seconds per
+     * attempt. Set to 0 or false to keep the server default.
+     */
+    'prune_lock_wait_timeout' => env('TELESCOPE_PRUNE_LOCK_WAIT_TIMEOUT', 10),
+
     'api' => env('TELESCOPE_TAG_API', false),
     'code' => env('TELESCOPE_TAG_CODE', true),
     'date' => env('TELESCOPE_TAG_DATE', false),
